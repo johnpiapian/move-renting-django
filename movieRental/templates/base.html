@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BrickSmasher Movie Rental</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
+</head>
+<body>
+    <header>
+        <h1>BrickSmasher Movie Rental</h1>
+        <nav>
+            <ul>
+                <li><a href="{% url 'home' %}">Home</a></li>
+                <li><a href="{% url 'account_creation' %}">Create Account</a></li>
+                <li><a href="{% url 'manage_movies' %}">Manage Movies</a></li>
+                <li><a href="{% url 'rent_return_movies' %}">Rent/Return Movies</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 BrickSmasher Movie Rental</p>
+    </footer>
+    {% block script %}{% endblock %}
+</body>
+</html>

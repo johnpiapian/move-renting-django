@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Rent/Return Movies</h2>
+
+    <form id="searchForm" action="{% url 'rent_return_movies' %}" method="post">
+        {% csrf_token %}
+        <label for="member_email">Member Email:</label>
+        <input type="email" id="member_email" name="member_email" required>
+        <input id="searchButton" type="submit" value="Search">
+    </form>
+    <p id="message">{{ message }}</p>
+
+    <div id="memberDetails" style="display: none;">
+        <h3>Member Details:</h3>
+        <p>First Name: <span id="memberFirstName"></span></p>
+        <p>Last Name: <span id="memberLastName"></span></p>
+
+        <h3>Rented Movies:</h3>
+        <table id="rentedMoviesTable">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Return</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <h3>All Movies:</h3>
+        <table id="availableMoviesTable">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Rent</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        // Search Member AJAX request
+        const searchForm = document.getElementById('searchForm');
+        const searchButton = document.getElementById('searchButton');
+        const message = document.getElementById('message');
+        const rentedMoviesTable = document.getElementById('rentedMoviesTable');
+        const availableMoviesTable = document.getElementById('availableMoviesTable');
+        const memberDetails = document.getElementById('memberDetails');
+        const memberFirstName = document.getElementById('memberFirstName');
+        const memberLastName = document.getElementById('memberLastName');
+
+        searchButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            const memberEmail = document.getElementById('member_email').value;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "dbRent" %}', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    memberDetails.style.display = 'block';
+                    memberFirstName.textContent = response.member.first_name;
+                    memberLastName.textContent = response.member.last_name;
+                    updateRentedMoviesTable(response.rentedMovies);
+                    updateAvailableMoviesTable(response.availableMovies);
+                    message.textContent = '';
+                } else {
+                    message.textContent = 'Error searching member.';
+                    rentedMoviesTable.innerHTML = '';
+                    availableMoviesTable.innerHTML = '';
+                }
+            };
+            xhr.send('action=search&member_email=' + encodeURIComponent(memberEmail));
+        });
+
+        // Function to update the rented movies table
+        function updateRentedMoviesTable(rentedMovies) {
+            const tbody = rentedMoviesTable.getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+
+            rentedMovies.forEach(movie => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td>${movie.title}</td>
+            <td><button onclick="returnMovie(${movie.id})">Return</button></td>
+        `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Function to update the available movies table
+        function updateAvailableMoviesTable(availableMovies) {
+            const tbody = availableMoviesTable.getElementsByTagName('tbody')[0];
+        tbody.innerHTML = '';
+
+        availableMovies.forEach(movie => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+        <td>${movie.title}</td>
+        <td><button onclick="rentMovie(${movie.id})">Rent</button></td>
+    `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Function to rent a movie
+    function rentMovie(movieId) {
+        const memberEmail = document.getElementById('member_email').value;
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "dbRent" %}', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                updateRentedMoviesTable(response.rentedMovies);
+                updateAvailableMoviesTable(response.availableMovies);
+                message.textContent = '';
+            } else {
+                message.textContent = 'Error renting movie.';
+            }
+        };
+        xhr.send('action=rent&member_email=' + encodeURIComponent(memberEmail) + '&movie_id=' + movieId);
+    }
+
+    // Function to return a movie
+    function returnMovie(movieId) {
+        const memberEmail = document.getElementById('member_email').value;
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "dbRent" %}', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                updateRentedMoviesTable(response.rentedMovies);
+                updateAvailableMoviesTable(response.availableMovies);
+                message.textContent = '';
+            } else {
+                message.textContent = 'Error returning movie.';
+            }
+        };
+        xhr.send('action=return&member_email=' + encodeURIComponent(memberEmail) + '&movie_id=' + movieId);
+    }
+    </script>
+{% endblock %}

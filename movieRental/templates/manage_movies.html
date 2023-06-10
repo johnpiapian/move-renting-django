@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Manage Movies</h2>
+
+    <form id="addMovieForm">
+        {% csrf_token %}
+        <label for="movie_title">New Movie Title:</label>
+        <input type="text" id="movie_title" name="movie_title" required>
+        <button id="addMovieButton" type="button">Add Movie</button>
+    </form>
+    <p id="message"></p>
+
+    <table id="moviesTable">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>In Stock</th>
+            <th>Checked Out</th>
+            <th>+</th>
+            <th>-</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for movie in movies %}
+            <tr id="movieRow_{{ movie.id }}">
+                <td>{{ movie.title }}</td>
+                <td id="stock_{{ movie.id }}">{{ movie.stock }}</td>
+                <td>{{ movie.checked_out }}</td>
+                <td>
+                    <button class="addStockButton" data-movie="{{ movie.id }}">+</button>
+                </td>
+                <td>
+                    <button class="removeStockButton" data-movie="{{ movie.id }}">-</button>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block script %}
+    <script>
+        // Add Movie AJAX request
+        const addMovieForm = document.getElementById('addMovieForm');
+        const addMovieButton = document.getElementById('addMovieButton');
+        const message = document.getElementById('message');
+
+        addMovieButton.addEventListener('click', function () {
+            const movieTitle = document.getElementById('movie_title').value;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "dbMovie" %}');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    updateMoviesTable(response);
+                    message.textContent = 'Movie added successfully.';
+                } else {
+                    message.textContent = 'Error adding movie.';
+                }
+            };
+            xhr.send(`action=new&title=${encodeURIComponent(movieTitle)}`);
+        });
+
+        // Add Stock & Remove Stock AJAX request using event delegation
+        const moviesTable = document.getElementById('moviesTable');
+        moviesTable.addEventListener('click', function (event) {
+            const target = event.target;
+            if (target.classList.contains('addStockButton')) {
+                const movieId = target.dataset.movie;
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '{% url "dbMovie" %}');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        updateMoviesTable(response);
+                    } else {
+                        message.textContent = 'Error updating stock.';
+                    }
+                };
+                xhr.send(`action=add&movie_id=${encodeURIComponent(movieId)}`);
+            } else if (target.classList.contains('removeStockButton')) {
+                const movieId = target.dataset.movie;
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '{% url "dbMovie" %}');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        updateMoviesTable(response);
+                    } else {
+                        message.textContent = 'Error updating stock.';
+                    }
+                };
+                xhr.send(`action=remove&movie_id=${encodeURIComponent(movieId)}`);
+            }
+        });
+
+        // Function to update the movies table
+        function updateMoviesTable(movies) {
+            const moviesTable = document.getElementById('moviesTable');
+            const tbody = moviesTable.getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+
+            movies.forEach(movie => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td>${movie.title}</td>
+            <td>${movie.stock}</td>
+            <td>${movie.checked_out}</td>
+            <td><button class="addStockButton" data-movie="${movie.id}">+</button></td>
+            <td><button class="removeStockButton" data-movie="${movie.id}">-</button></td>
+        `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+{% endblock %}
+

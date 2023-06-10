@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Rent/Return Movies</h2>
+
+    <form id="searchForm" method="post">
+        {% csrf_token %}
+        <label for="member_email">Member Email:</label>
+        <input type="email" id="member_email" name="member_email" required>
+        <input id="searchButton" type="submit" value="Search">
+    </form>
+    <p id="message" style="font-weight: bold">{{ message }}</p>
+
+    {% if member %}
+        <h3>Member Details:</h3>
+        <p>First Name: {{ member.first_name }}</p>
+        <p>Last Name: {{ member.last_name }}</p>
+
+        <h3>Rented Movies:</h3>
+        <table id="rentedMoviesTable">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Return</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in rented_movies %}
+                <tr>
+                    <td>{{ item.movie.title }}</td>
+                    <td><button class="returnButton" data-member="{{ item.user.id }}" data-movie="{{ item.movie.id }}">Return</button></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>All Movies:</h3>
+        <table id="availableMoviesTable">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Rent</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for movie in available_movies %}
+                <tr>
+                    <td>{{ movie.title }}</td>
+                    <td><button class="rentButton" data-member="{{ member.id }}" data-movie="{{ movie.id }}">Rent</button></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}
+
+{% block script %}
+    <script>
+        // Search Member form submission
+        const searchForm = document.getElementById('searchForm');
+        const searchButton = document.getElementById('searchButton');
+        const messageElement = document.getElementById('message');
+
+        searchForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const memberEmail = document.getElementById('member_email').value;
+
+            // Submit the form using normal form submission
+            searchForm.submit();
+        });
+
+        // Rent Movie AJAX request
+        const rentButtons = document.getElementsByClassName('rentButton');
+        for (const button of rentButtons) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                const memberId = button.dataset.member;
+                const movieId = button.dataset.movie;
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '{% url "dbRent" %}');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        // Refresh the page to update the movie listings
+                        location.reload();
+                    } else {
+                        console.error('Error renting movie.');
+                        messageElement.textContent = 'Error renting movie.';
+                    }
+                };
+                xhr.send(`action=rent&user_id=${memberId}&movie_id=${movieId}`);
+            });
+        }
+
+        // Return Movie AJAX request
+        const returnButtons = document.getElementsByClassName('returnButton');
+        for (const button of returnButtons) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                const memberId = button.dataset.member;
+                const movieId = button.dataset.movie;
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '{% url "dbRent" %}');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        // Refresh the page to update the movie listings
+                        location.reload();
+                    } else {
+                        console.error('Error returning movie.');
+                        messageElement.textContent = 'Error returning movie.';
+                    }
+                };
+                xhr.send(`action=return&user_id=${encodeURIComponent(memberId)}&movie_id=${encodeURIComponent(movieId)}`);
+            });
+        }
+    </script>
+{% endblock %}
+
